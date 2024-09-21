@@ -1,66 +1,85 @@
-typedef enum {
-    JSON_DICTIONARY,
-    JSON_ARRAY,
-    JSON_OTHER
-} JSONType;
+#include <stdlib.h>
 
 typedef struct JSONObject JSONObject;
 
+// Defines a JSON entry, which consists of a key and a value
 typedef struct {
     char* key;
     JSONObject* value;
 } JSONEntry;
 
+// Defines a JSON object, which can be either a dictionary or a string
 typedef struct JSONObject {
-    JSONType type;
+    // Indicates whether the object is a dictionary (1) or a string (0)
+    unsigned char is_dictionary;
     union {
         struct {
+            // An array of JSON entries pointers for the dictionary
             JSONEntry** entries;
+            // The current number of entries in the dictionary
             size_t size;
+            // The maximum number of entries the dictionary can hold without reallocation
             size_t capacity;
         } dictionary;
-        struct {
-            JSONObject** elements;
-            size_t size;
-            size_t capacity;
-        } array;
-
+        // The string value of the object (if it's not a dictionary)
         char* string;
     } data;
 } JSONObject;
 
-void json_array_add(JSONObject* array, JSONObject* element) {
-    if (array->array.size == array->array.capacity) {
-        array->array.capacity *= 2;
-        array->array.elements = realloc(array->elements, array->capacity * sizeof(JSONObject*));
+// Adds a key-value pair to a JSON dictionary object.
+void json_dictionary_add(JSONObject* object, char* key, JSONObject* value) {
+    // Check if the dictionary needs to be resized.
+    if (object->data.dictionary.size == object->data.dictionary.capacity) {
+        object->data.dictionary.capacity *= 2;
+        JSONEntry** new_entries = realloc(object->data.dictionary.entries, object->data.dictionary.capacity * sizeof(JSONEntry*));
+        if (new_entries == NULL) {
+            puts("Failed to reallocate memory for JSON Object (Dictionary).");
+            exit(1);
+        }
+        object->data.dictionary.entries = new_entries;
     }
-    array->array.elements[array->array.size++] = element;
-}
-/*
-void json_array_iterate(json_array* array, void (*callback)(JSONObject*)) {
-    for (size_t i = 0; i < array->size; i++) {
-        callback(array->elements[i]);
+
+    // Create a new JSON entry.
+    JSONEntry* entry = malloc(sizeof(JSONEntry));
+    if (entry == NULL) {
+        puts("Failed to allocate memory for JSON Object Entry.");
+        exit(2);
     }
+
+    entry->key = key;
+    entry->value = value;
+    object->data.dictionary.entries[object->data.dictionary.size++] = entry;
 }
 
-JSONObject* json_object_create(JSONType type) {
+// Creates a new JSON object.
+JSONObject* json_object_create(unsigned char is_dictionary) {
+    // Allocate memory for the JSON object.
     JSONObject* object = malloc(sizeof(JSONObject));
-    object->type = type;
-    switch (type) {
-        case JSON_ARRAY:
-            object->data.array.elements = malloc(sizeof(JSONObject*));
-            object->data.array.size = 0;
-            object->data.array.capacity = 1;
-            break;
-        case JSON_DICTIONARY:
-            // TODO: implement dictionary type
-            break;
-        case JSON_OTHER:
-            object->data.string.length = 0;
-            object->data.string.arr = malloc(sizeof(char));
-            break;
-        default:
-            // пиздец
-            exit(1);
+    if (object == NULL) {
+        puts("Failed to allocate memory for JSON Object.");
+        exit(3);
     }
-}*/
+
+    object->is_dictionary = is_dictionary;
+
+    // If the object is a dictionary, allocate memory for the entries array.
+    if (is_dictionary) {
+        object->data.dictionary.entries = malloc(sizeof(JSONEntry*));
+        if (object->data.dictionary.entries == NULL) {
+            puts("Failed to allocate memory for JSON Object (Dictionary).");
+            exit(4);
+        }
+        object->data.dictionary.size = 0;
+        object->data.dictionary.capacity = 1;
+    }
+    // If the object is not a dictionary, allocate memory for the string value.
+    else {
+        object->data.string = malloc(sizeof(char));
+        if (object->data.string == NULL) {
+            puts("Failed to allocate memory for JSON Object (Not dictionary).");
+            exit(5);
+        }
+    }
+
+    return object;
+}
