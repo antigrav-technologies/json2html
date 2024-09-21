@@ -128,21 +128,21 @@ char* decode_string(char* s, size_t* idx) {
 
     size_t start_idx = *idx;
     while (1) {
-        if (s[*idx] < ' ')
+        if ((unsigned char)s[*idx] < ' ')
             error("Unterminated string literal starting at", s, start_idx, 6);
         if (s[*idx] == '"') {
-            idx++;
+            (*idx)++;
             s_[s_idx] = '\0';
             s_ = realloc(s_, s_idx + 1);
             return s_; 
         }
         if (s[*idx] == '\\') {
-            idx++;
+            (*idx)++;
             switch (s[*idx]) {
                 case 'u':
                     int uni = decode_uXXXX(s, *idx);
                     size_t uni_begin = *idx + 1;
-                    idx += 5;
+                    (*idx) += 5;
                     if (0xd800 <= uni && uni <= 0xdbff && s[*idx] == '\\' && s[*idx] == 'u') {
                         int uni2 = decode_uXXXX(s, *idx + 1);
                         if (0xdc00 <= uni2 && uni2 <= 0xdfff) {
@@ -258,11 +258,11 @@ JSONObject* decode_object(char* s, size_t* idx) {
         skip_whitespace(s, idx);
         JSONObject* value = read_json(s, idx);
         json_dictionary_add(dict, key, value);
+        skip_whitespace(s, idx);
         if (*idx <= strlen(s) && s[*idx] == '}') {
             (*idx)++;
             return dict;
         }
-        skip_whitespace(s, idx);
         if (s[*idx] != ',') error("Expecting ',' delimiter at", s, *idx, 13);
         (*idx)++;
     }
