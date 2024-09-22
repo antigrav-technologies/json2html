@@ -206,7 +206,7 @@ char* decode_string(char* s, size_t* idx) {
                     break;
                 case 't':
                     (*idx)++;
-                    s[s_idx++] = 't';
+                    s[s_idx++] = '\t';
                     break;
                 default:
                     error("Invalid \\ escape at", s, *idx, 9);
