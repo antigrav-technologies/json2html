@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "json_reader.h"
-#include "xml_builder.h"
+#include "json_types.h"
+#include "html_builder.h"
 
 void print_json(JSONObject* object, int indent) {
     if (object->is_dictionary) {
@@ -58,7 +58,8 @@ int main(int argc, char* argv[]) {
     fclose(file);
 
     size_t idx = 0;
-    string_buffer* buf = build_xml(read_json(buffer, &idx)); 
+    JSONObject* json = read_json(buffer, &idx);
+    string_buffer* buf = build_html(json);
     FILE* fp = fopen(argc < 3 ? "output.html" : argv[2], "w");
     if (fp != NULL) {
         fwrite(buf->string, 1, buf->len, fp);
@@ -68,6 +69,6 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Error opening output file.\n");
         exit(100);
     }
-    print_json(read_json(buffer, &idx), 0);
+    print_json(json, 0);
     free(buffer);
 }
