@@ -1,5 +1,23 @@
 #include <stdio.h>
 #include "json_reader.h"
+#include "xml_builder.h"
+
+void print_json(JSONObject* object, int indent) {
+    if (object->is_dictionary) {
+        printf("{\n");
+        for (size_t i = 0; i < object->data.dictionary.size; i++) {
+            for (int j = 0; j <= indent; j++) printf("    ");
+            printf("\"%s\": ", object->data.dictionary.entries[i]->key);
+            print_json(object->data.dictionary.entries[i]->value, indent + 1);
+            printf("\n");
+        }
+        for (int j = 0; j < indent; j++) printf("    ");
+        printf("}\n");
+    }
+    else {
+        printf("%s", object->data.string);
+    }
+}
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -40,7 +58,16 @@ int main(int argc, char* argv[]) {
     fclose(file);
 
     size_t idx = 0;
-    read_json(buffer, &idx);
-
+    string_buffer* buf = build_xml(read_json(buffer, &idx)); 
+    FILE* fp = fopen(argc < 3 ? "output.html" : argv[2], "w");
+    if (fp != NULL) {
+        fwrite(buf->string, 1, buf->len, fp);
+        fclose(fp);
+    }
+    else {
+        fprintf(stderr, "Error opening output file.\n");
+        exit(100);
+    }
+    print_json(read_json(buffer, &idx), 0);
     free(buffer);
 }

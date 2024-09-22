@@ -1,5 +1,9 @@
+#ifndef _JSON2HTML_JSON_READER
+#define _JSON2HTML_JSON_READER
+
 #include <stdlib.h>
 #include <string.h>
+#include "utils.h"
 
 typedef struct JSONObject JSONObject;
 
@@ -142,12 +146,12 @@ char* decode_string(char* s, size_t* idx) {
                 case 'u':
                     int uni = decode_uXXXX(s, *idx);
                     size_t uni_begin = *idx + 1;
-                    (*idx) += 5;
+                    *idx += 5;
                     if (0xd800 <= uni && uni <= 0xdbff && s[*idx] == '\\' && s[*idx] == 'u') {
                         int uni2 = decode_uXXXX(s, *idx + 1);
                         if (0xdc00 <= uni2 && uni2 <= 0xdfff) {
                             uni = 0x10000 + (((uni - 0xd800) << 10) | (uni2 - 0xdc00));
-                            idx += 6;
+                            *idx += 6;
                         }
                     }
                     if (uni <= 0x7F) {
@@ -269,14 +273,30 @@ JSONObject* decode_object(char* s, size_t* idx) {
     return dict;
 }
 
-JSONObject* number_match(char* s, size_t* idx) {
-    // parse somehow
-    // "(-?(?:0|[1-9]\\d*))(\\.\\d+)?([eE][-+]?\\d+)?"
-    return json_make_string("idk");
+size_t number_match(char* s, size_t* idx) {
+    size_t newIdx = *idx;
+
+    while ('0' <= s[newIdx] && s[newIdx] <= '9') newIdx++;
+    if (newIdx == *idx) return newIdx;
+
+    if (s[newIdx] == '.') {
+        newIdx++;
+        while ('0' <= s[newIdx] && s[newIdx] <= '9') newIdx++;
+    }
+
+    if (s[newIdx] == 'e' || s[newIdx] == 'E') {
+        newIdx++;
+        if (s[newIdx] == '+' || s[newIdx] == '-') newIdx++;
+        while ('0' <= s[newIdx] && s[newIdx] <= '9') newIdx++;
+    }
+
+    return newIdx;
 }
 
 JSONObject* read_json(char* s, size_t* idx) {
-    if (*idx >= strlen(s)) error("Expecting value", s, *idx, 10);
+    printf("*idx = %zu\n", *idx);
+    printf("sizeofutf8(s) = %llu\n", sizeofutf8(s));
+    if (*idx > sizeofutf8(s)) error("Expecting value", s, *idx, 10);
     char nextchar = s[*idx];
     if (nextchar == '"') {
         (*idx)++;
@@ -289,26 +309,34 @@ JSONObject* read_json(char* s, size_t* idx) {
     if (nextchar == '[') {
         error("Arrays aren't supported", s, *idx, 11);
     }
-    if (nextchar == 't' && *idx + 3 < strlen(s) && s[*idx + 1] == 'r' && s[*idx + 2] == 'u' && s[*idx + 3] == 'e') {
-        idx += 4;
+    if (strncmp(s + *idx, "true", 4) == 0) {
+        *idx += 4;
         return json_make_string("true");
     }
-    if (nextchar == 'f' && *idx + 4 < strlen(s) && s[*idx + 1] == 'a' && s[*idx + 2] == 'l' && s[*idx + 3] == 's' && s[*idx + 4] == 'e') {
-        idx += 5;
+    if (strncmp(s + *idx, "false", 5) == 0) {
+        *idx += 5;
         return json_make_string("false");
     }
-    if (nextchar == 'N' && *idx + 2 < strlen(s) && s[*idx + 1] == 'a' && s[*idx + 2] == 'N') {
-        idx += 3;
+    if (strncmp(s + *idx, "NaN", 3) == 0) {
+        *idx += 3;
         return json_make_string("NaN");
     }
-    if (nextchar == 'I' && *idx + 7 < strlen(s) && s[*idx + 1] == 'n' && s[*idx + 2] == 'f' && s[*idx + 3] == 'i' && s[*idx + 4] == 'n' && s[*idx + 5] == 'i' && s[*idx + 6] == 't' && s[*idx + 7] == 'y') {
-        idx += 8;
+    if (strncmp(s + *idx, "Infinity", 4) == 0) {
+        *idx += 8;
         return json_make_string("Infinity");
     }
-    if (nextchar == '-' && *idx + 8 < strlen(s) && s[*idx + 1] == 'I' && s[*idx + 2] == 'n' && s[*idx + 3] == 'f' && s[*idx + 4] == 'i' && s[*idx + 5] == 'n' && s[*idx + 6] == 'i' && s[*idx + 7] == 't' && s[*idx + 8] == 'y') {
-        idx += 9;
+    if (strncmp(s + *idx, "-Infinity", 4) == 0) {
+        *idx += 9;
         return json_make_string("-Infinity");
     }
-    return (number_match(s, idx));
+    size_t newIdx = number_match(s, idx);
+    if (newIdx != *idx) {
+        char* substring = malloc(newIdx - *idx + 1);
+        strncpy(substring, s + *idx, newIdx - *idx);
+        substring[newIdx - *idx + 1] = '\0';
+        return json_make_string(substring);
+    }
     error("Expecting value", s, *idx, 14);
 }
+
+#endif
