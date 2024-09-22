@@ -295,7 +295,7 @@ size_t number_match(char* s, size_t* idx) {
 
 JSONObject* read_json(char* s, size_t* idx) {
     printf("*idx = %zu\n", *idx);
-    printf("sizeofutf8(s) = %llu\n", sizeofutf8(s));
+    printf("sizeofutf8(s) = %zu\n", sizeofutf8(s));
     if (*idx > sizeofutf8(s)) error("Expecting value", s, *idx, 10);
     char nextchar = s[*idx];
     if (nextchar == '"') {
@@ -309,23 +309,23 @@ JSONObject* read_json(char* s, size_t* idx) {
     if (nextchar == '[') {
         error("Arrays aren't supported", s, *idx, 11);
     }
-    if (strncmp(s + *idx, "true", 4) == 0) {
+    if (nextchar == 't' && (strncmp(s + *idx + 1, "rue", 3) == 0)) {
         *idx += 4;
         return json_make_string("true");
     }
-    if (strncmp(s + *idx, "false", 5) == 0) {
+    if (nextchar == 'f' && (strncmp(s + *idx + 1, "alse", 4) == 0)) {
         *idx += 5;
         return json_make_string("false");
     }
-    if (strncmp(s + *idx, "NaN", 3) == 0) {
+    if (nextchar == 'N' && (strncmp(s + *idx + 1, "aN", 2) == 0)) {
         *idx += 3;
         return json_make_string("NaN");
     }
-    if (strncmp(s + *idx, "Infinity", 4) == 0) {
+    if (nextchar == 'I' && (strncmp(s + *idx + 1, "nfinity", 7) == 0)) {
         *idx += 8;
         return json_make_string("Infinity");
     }
-    if (strncmp(s + *idx, "-Infinity", 4) == 0) {
+    if (nextchar == '-' && (strncmp(s + *idx + 1, "Infinity", 8) == 0)) {
         *idx += 9;
         return json_make_string("-Infinity");
     }
