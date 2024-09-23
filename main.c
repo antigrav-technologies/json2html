@@ -1,23 +1,6 @@
 #include <stdio.h>
-#include "json_types.h"
+#include "json_reader.h"
 #include "html_builder.h"
-
-void print_json(JSONObject* object, int indent) {
-    if (object->is_dictionary) {
-        printf("{\n");
-        for (size_t i = 0; i < object->data.dictionary.size; i++) {
-            for (int j = 0; j <= indent; j++) printf("    ");
-            printf("\"%s\": ", object->data.dictionary.entries[i]->key);
-            print_json(object->data.dictionary.entries[i]->value, indent + 1);
-            printf("\n");
-        }
-        for (int j = 0; j < indent; j++) printf("    ");
-        printf("}\n");
-    }
-    else {
-        printf("%s", object->data.string);
-    }
-}
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {

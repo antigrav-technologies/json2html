@@ -1,0 +1,14 @@
+{
+  "html": {
+    "head": {
+      "title": {
+        "$": "test page"
+      }
+    },
+    "body": {
+      "p": {
+        "$": "Hello, world!"
+      }
+    }
+  }
+}

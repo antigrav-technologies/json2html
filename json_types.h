@@ -1,6 +1,8 @@
 #ifndef _JSON2HTML_JSON_TYPES
 #define _JSON2HTML_JSON_TYPES
 
+#include <stdlib.h>
+
 typedef struct JSONObject JSONObject;
 
 // Defines a JSON entry, which consists of a key and a value
@@ -26,6 +28,23 @@ typedef struct JSONObject {
         char* string;
     } data;
 } JSONObject;
+
+void print_json(JSONObject* object, int indent) {
+    if (object->is_dictionary) {
+        printf("{\n");
+        for (size_t i = 0; i < object->data.dictionary.size; i++) {
+            for (int j = 0; j <= indent; j++) printf("    ");
+            printf("\"%s\": ", object->data.dictionary.entries[i]->key);
+            print_json(object->data.dictionary.entries[i]->value, indent + 1);
+            printf("\n");
+        }
+        for (int j = 0; j < indent; j++) printf("    ");
+        printf("}\n");
+    }
+    else {
+        printf("%s", object->data.string);
+    }
+}
 
 // Adds a key-value pair to a JSON dictionary object.
 void json_dictionary_add(JSONObject* object, char* key, JSONObject* value) {

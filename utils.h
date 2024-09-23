@@ -13,6 +13,20 @@ size_t sizeofutf8(char* s) {
     }
 }
 
+unsigned char utf8_contains_space(char* s) {
+    size_t counter = 0;
+    size_t size = sizeofutf8(s);
+    while (counter < size) {
+        if (s[counter] == ' ') return 1;
+        else if ((s[counter] & 0x80) == 0) counter++;
+        else if ((s[counter] & 0xE0) == 0xC0) counter += 2;
+        else if ((s[counter] & 0xF0) == 0xE0) counter += 3;
+        else if ((s[counter] & 0xF8) == 0xF0) counter += 4;
+        else return 0;
+    }
+    return 0;
+}
+
 size_t roundup(size_t n) {
     size_t result = 1;
     while (result < n) {

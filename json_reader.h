@@ -35,10 +35,11 @@ int decode_uXXXX(char* s, size_t idx) {
     error("Invalid \\uXXXX escape", s, idx, 7);
 }
 
-char* decode_string(char* s, size_t* idx) {
+char* decode_string(char* s, size_t* idx, unsigned char in_brackets) {
     size_t begin = *idx - 1;
-    char* s_ = malloc(strlen(s) + 1);
-    size_t s_idx = 0;
+    char* s_ = malloc(sizeofutf8(s) - *idx + 1 + in_brackets);
+    if (in_brackets) s_[0] = '"';
+    size_t s_idx = (size_t)in_brackets;
 
     size_t start_idx = *idx;
     while (1) {
@@ -46,9 +47,15 @@ char* decode_string(char* s, size_t* idx) {
             error("Unterminated string literal starting at", s, start_idx, 6);
         if (s[*idx] == '"') {
             (*idx)++;
-            s_[s_idx] = '\0';
-            s_ = realloc(s_, s_idx + 1);
-            return s_; 
+            if (in_brackets) {
+                s_[s_idx] = '"';
+                s_[s_idx + 1] = '\0';
+            }
+            else {
+                s_[s_idx] = '\0';
+            }
+            s_ = realloc(s_, s_idx + 1 + in_brackets);
+            return s_;
         }
         if (s[*idx] == '\\') {
             (*idx)++;
@@ -165,7 +172,7 @@ JSONObject* decode_object(char* s, size_t* idx) {
         skip_whitespace(s, idx);
         if (*idx >= strlen(s) || s[*idx] != '"') error("Expecting string at", s, *idx, 11);
         (*idx)++;
-        char* key = decode_string(s, idx);
+        char* key = decode_string(s, idx, 0);
         skip_whitespace(s, idx);
         if (s[*idx] != ':') error("Expecting ':' delimiter at", s, *idx, 12);
         (*idx)++;
@@ -203,13 +210,11 @@ size_t number_match(char* s, size_t* idx) {
 }
 
 JSONObject* read_json(char* s, size_t* idx) {
-    printf("*idx = %zu\n", *idx);
-    printf("sizeofutf8(s) = %zu\n", sizeofutf8(s));
     if (*idx >= sizeofutf8(s)) error("Expecting value", s, *idx, 10);
     char nextchar = s[*idx];
     if (nextchar == '"') {
         (*idx)++;
-        return json_make_string(decode_string(s, idx));
+        return json_make_string(decode_string(s, idx, 1));
     }
     if (nextchar == '{') {
         (*idx)++;
