@@ -52,6 +52,6 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Error opening output file.\n");
         exit(100);
     }
-    print_json(json, 0);
+    //print_json(json, 0);
     free(buffer);
 }
